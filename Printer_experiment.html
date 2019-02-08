@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="./Printer_experiment.css">
+    <title>Circular printer</title>
+  </head>
+  <body>
+    <canvas id="canvas" width=100 height=100></canvas>
+    <script src="../home.js"></script>
+    <!-- <script src="printer_experiment.js"></script> -->
+    <script type="text/javascript">
+      let play = ()=>{
+        printer.play();
+      }
+    </script>
+    <script>
+    let canvas = document.getElementById('canvas');
+    let ctx = canvas.getContext('2d');
+
+    let width = window.innerWidth,
+        height = window.innerHeight;
+
+    canvas.setAttribute('width', width);
+    canvas.setAttribute('height', height);
+
+    class Printer {
+
+      constructor(){
+        this.context = ctx;
+        this.x = width/2;
+        this.y = height/2;
+        this.angle = 0;
+        this.length = 3200;
+        this.lengthStep = 1;
+        this.angleStep = Math.PI/180;
+        this.stop = 1000;//Ограничитель шагов
+        this.extrude = false;
+        this.scale = this.length / this.y;
+        this.widthOfExtruder = 100;
+        this.widthOfWall = 500;
+      }
+
+      setLength(l){
+        this.length = l ;
+      }
+      lengthDown(step){
+        this.length -= step;
+      }
+      angleUp(step){
+        this.angle += step ;
+      }
+      angleDown(step){
+        this.angle += step ;
+      }
+      getX(){
+        return this.x + Math.cos(this.angle) * this.func(this.angle) * this.length;
+      }
+      getY(){
+        return this.y + Math.sin(this.angle) * this.func(this.angle) * this.length;
+      }
+
+      //function for draw cross in center
+      pointCenter(){
+        this.context.beginPath();
+        this.context.moveTo(this.x - 10, this.y);
+        this.context.lineTo(this.x + 10, this.y);
+        this.context.moveTo(this.x, this.y - 10);
+        this.context.lineTo(this.x, this.y + 10);
+        this.context.stroke();
+      }
+      pointExtruder(){
+        this.context.beginPath();
+        this.context.strokeStyle = "#ff0000";
+        this.context.moveTo(this.getX()-5, this.getY())
+        this.context.lineTo(this.getX() + 5, this.getY());
+        this.context.moveTo(this.getX(), this.getY() - 5);
+        this.context.lineTo(this.getX(), this.getY() + 5)
+        this.context.stroke();
+        this.context.strokeStyle = "#000000";
+      }
+
+      drawWall(r, n){
+
+        let func = (angle)=>{
+
+          return Math.sin(12 * angle);
+        }
+
+        this.context.beginPath();
+        this.context.lineWidth = this.widthOfExtruder / this.scale;
+        this.context.arc( this.x, this.y, (r + this.widthOfExtruder/2)/ this.scale, 0, Math.PI * 2);
+        this.context.stroke();
+
+        this.context.beginPath();
+        this.context.arc(this.x, this.y, (r + this.widthOfWall - this.widthOfExtruder/2)/ this.scale, 0, Math.PI * 2);
+        this.context.stroke();
+
+        this.context.beginPath();
+        this.context.moveTo(this.x + (r + this.widthOfWall /2)/this.scale, this.y);
+        for(let i = 0; i < 360; i ++ ){
+          let angle = this.angleStep * i,
+              sin = Math.sin(angle),
+              cos = Math.cos(angle),
+              ew = this.widthOfExtruder,
+              xext = cos * (r + this.widthOfWall/2 + (this.widthOfWall/2 - 1.5 * ew) * func(angle)),
+              yext = sin * (r + this.widthOfWall/2 + (this.widthOfWall/2 - 1.5 * ew) * func(angle)),
+              cx = this.x,
+              cy = this.y,
+              scale = this.scale;
+
+          this.context.lineTo(cx + xext / scale, cy + yext/scale);
+        };
+        this.context.closePath();
+        this.context.stroke();
+      }
+
+
+
+      play(){
+        this.context.beginPath();
+        this.context.moveTo(this.getX(), this.getY());
+        for (let i = 0; i < 360*2; i++) {
+          this.pointExtruder();
+          this.angleUp(this.angleStep);
+          this.context.lineTo(this.getX(), this.getY());
+
+        }
+        this.context.stroke();
+      }
+    };
+
+
+
+    let printer = new Printer();
+    printer.pointCenter();
+    // printer.func = angle => Math.cos(0.1*angle);
+
+    // printer.play();
+    // printer.drawSegment(300,0,12);
+    let angle = 0;
+    let step = Math.PI / 360;
+    function play1(){
+
+      let r = ((Math.cos(angle)+1)/2) * 2700;
+      angle += step;
+      printer.context.clearRect(0,0, width, height);
+      printer.drawWall(r, 12)
+      window.requestAnimationFrame(play1);
+    }
+
+    play1();
+    printer.drawWall(2700, 12);
+</script>
+  </body>
+</html>
